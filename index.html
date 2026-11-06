@@ -66,6 +66,11 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outlin
 .st[aria-current="true"][data-v="shot"], .st[aria-current="true"][data-v="posted"], .st[aria-current="true"][data-v="done"] { background: var(--ok); color: var(--surface); border-color: var(--ok); }
 .st[aria-current="true"][data-v="no"], .st[aria-current="true"][data-v="skip"] { background: var(--no); color: var(--surface); border-color: var(--no); }
 .src { color: var(--muted); font-size: 12.5px; margin-left: auto; }
+.thumb-btn { border: 0; padding: 0; background: none; align-self: start; display: grid; gap: 4px; justify-items: center; }
+.thumb-btn small { font-size: 11px; color: var(--accent); }
+.story { grid-column: 1 / -1; width: 100%; border-radius: 6px; display: block; }
+.tabs { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+.tab { white-space: nowrap; }
 .mynote { margin: 0; font-size: 13.5px; color: var(--muted); border-left: 2px solid var(--line); padding-left: 8px; }
 .empty { border: 1px dashed var(--line); border-radius: 10px; padding: 22px; color: var(--muted); }
 .plan { display: grid; gap: 8px; margin-top: 14px; }
@@ -93,8 +98,11 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outlin
   <header>
     <h1>Контент <span>@fellinin</span></h1>
     <nav class="tabs" role="tablist">
-      <button class="tab" role="tab" data-view="ideas" id="tab-ideas">Идеи</button>
-      <button class="tab" role="tab" data-view="plan" id="tab-plan">План недели</button>
+      <button class="tab" role="tab" data-view="memes" id="tab-memes">Мемы</button>
+      <button class="tab" role="tab" data-view="art" id="tab-art">Арт</button>
+      <button class="tab" role="tab" data-view="carousels" id="tab-carousels">Карусели</button>
+      <button class="tab" role="tab" data-view="tips" id="tab-tips">Советы</button>
+      <button class="tab" role="tab" data-view="plan" id="tab-plan">План</button>
       <button class="tab" role="tab" data-view="strategy" id="tab-strategy">Стратегия</button>
     </nav>
     <div id="filters" class="chips" aria-label="Фильтры"></div>
@@ -149,13 +157,16 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outlin
 
 <script>
 const BOT = "https://t.me/fil_content_bot?start=";
+const VIEWS = { memes: ["meme"], art: ["art", "project"], carousels: ["carousel"], tips: ["tip"] };
+const EMPTY = { memes: "Мемов пока нет. Поделись роликом с @fil_content_bot.", art: "Арт-идей пока нет.", tips: "Советов пока нет.",
+  carousels: "Здесь будут карусели. Сначала тема: напиши боту «карусель про …», и я соберу слайды в твоём стиле." };
 const KIND = { meme: "Мем", art: "Арт", tip: "Совет", project: "Уже проект" };
 const STATUS = [["new", "Новые"], ["take", "Берём"], ["shot", "Снято"], ["posted", "Вышло"], ["no", "Нет"]];
 const SLABEL = Object.fromEntries(STATUS);
 const ACTS = [["take", "Берём"], ["no", "Нет"], ["shot", "Снято"], ["posted", "Вышло"]];
 const DAYS = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
 const TRACK = { meme: "мем", talk: "разговорный", long: "длинный" };
-let ideas = [], plan = [], view = "ideas", fStatus = "all", fKind = "all";
+let ideas = [], plan = [], view = "memes", fStatus = "all";
 const $ = s => document.querySelector(s);
 const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
 const pref = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -163,9 +174,10 @@ const keep = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
 
 function route() {
   const h = location.hash.slice(1);
-  view = ["ideas", "plan", "strategy"].includes(h) ? h : "ideas";
-  for (const v of ["ideas", "plan", "strategy"]) { $("#v-" + v).hidden = v !== view; $("#tab-" + v).setAttribute("aria-selected", v === view); }
-  renderFilters();
+  view = h in VIEWS || h === "plan" || h === "strategy" ? h : "memes";
+  $("#v-ideas").hidden = !(view in VIEWS); $("#v-plan").hidden = view !== "plan"; $("#v-strategy").hidden = view !== "strategy";
+  document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.view === view));
+  fStatus = "all"; render();
 }
 document.querySelectorAll(".tab").forEach(b => b.onclick = () => { location.hash = b.dataset.view; });
 addEventListener("hashchange", route);
@@ -177,13 +189,12 @@ function chip(label, count, on, fn) {
 }
 function renderFilters() {
   const f = $("#filters"); f.replaceChildren();
-  if (view !== "ideas") { f.hidden = true; return; } f.hidden = false;
-  const cnt = s => ideas.filter(i => (i.status || "new") === s).length;
-  const set = (s, k) => () => { if (s) { fStatus = k; keep("fStatus", k); } else { fKind = k; keep("fKind", k); } renderFilters(); renderIdeas(); };
-  f.append(chip("Все", ideas.length, fStatus === "all", set(true, "all")));
-  for (const [k, l] of STATUS) f.append(chip(l, cnt(k), fStatus === k, set(true, k)));
-  const sep = el("span"); sep.style.width = "100%"; f.append(sep);
-  for (const [k, l] of [["all", "Все виды"], ["meme", "Мемы"], ["art", "Арт"], ["tip", "Советы"]]) f.append(chip(l, null, fKind === k, set(false, k)));
+  if (!(view in VIEWS)) { f.hidden = true; return; } f.hidden = false;
+  const mine = ideas.filter(i => VIEWS[view].includes(i.kind));
+  const cnt = s => mine.filter(i => (i.status || "new") === s).length;
+  const set = k => () => { fStatus = k; renderFilters(); renderIdeas(); };
+  f.append(chip("Все", mine.length, fStatus === "all", set("all")));
+  for (const [k, l] of STATUS) if (cnt(k) || k === "take") f.append(chip(l, cnt(k), fStatus === k, set(k)));
 }
 function copyText(btn, text) {
   const done = () => { btn.textContent = "Скопировано"; setTimeout(() => btn.textContent = "Копировать", 1400); };
@@ -197,15 +208,26 @@ function act(href, label, v, on) {
 }
 function renderIdeas() {
   const feed = $("#feed"); feed.replaceChildren();
-  const list = ideas
+  if (!(view in VIEWS)) return;
+  const mine = ideas.filter(i => VIEWS[view].includes(i.kind));
+  const list = mine
     .filter(i => fStatus === "all" || (i.status || "new") === fStatus)
-    .filter(i => fKind === "all" || i.kind === fKind || (fKind === "art" && i.kind === "project"))
     .sort((a, b) => (b.star ? 1 : 0) - (a.star ? 1 : 0) || a.n - b.n);
-  if (!list.length) { feed.append(el("div", "empty", ideas.length ? "В этом фильтре пусто." : "Идей пока нет. Поделись роликом с @fil_content_bot, и карточка появится здесь.")); return; }
+  if (!list.length) { feed.append(el("div", "empty", mine.length ? "В этом фильтре пусто." : EMPTY[view])); return; }
   for (const i of list) {
     const st = i.status || "new";
     const c = el("article", "card"); c.dataset.status = st;
-    const img = el("img", "thumb"); img.alt = ""; img.loading = "lazy"; img.src = i.img; c.append(img);
+    const tb = el("button", "thumb-btn"); tb.setAttribute("aria-label", "Раскадровка №" + i.n);
+    const img = el("img", "thumb"); img.alt = ""; img.loading = "lazy"; img.src = i.img; tb.append(img);
+    let story = null;
+    if (i.frames) {
+      tb.append(el("small", null, "кадры ▾"));
+      tb.onclick = () => {
+        if (story) { story.remove(); story = null; tb.lastChild.textContent = "кадры ▾"; return; }
+        story = el("img", "story"); story.alt = "Раскадровка ролика №" + i.n; story.src = i.frames; c.append(story); tb.lastChild.textContent = "скрыть ▴";
+      };
+    }
+    c.append(tb);
     const b = el("div", "body"); const m = el("div", "meta");
     m.append(el("span", "num", "№" + String(i.n).padStart(3, "0")));
     if (i.star) m.append(el("span", "star", "★"));
@@ -245,8 +267,7 @@ function renderPlan() {
 }
 function render() { renderFilters(); renderIdeas(); renderPlan(); }
 
-fStatus = pref("fStatus") || "all"; fKind = pref("fKind") || "all";
-route(); render();
+route();
 fetch("data.json", { cache: "no-store" }).then(r => r.json()).then(d => {
   ideas = d.ideas || []; plan = d.plan || [];
   $("#ideas-note").textContent = "Обновлено " + (d.updated || "") + ". Кнопка открывает бота с командой, нажми «Старт» или «Отправить». Можно просто написать боту «берём 10, 30».";
