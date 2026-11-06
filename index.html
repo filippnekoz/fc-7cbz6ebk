@@ -59,7 +59,9 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outlin
 .vars ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
 .vars li { display: flex; gap: 8px; align-items: flex-start; background: var(--bg); border-radius: 6px; padding: 6px 8px; font-size: 14px; }
 .vars li span { flex: 1; min-width: 0; }
-.copy { border: 0; background: none; color: var(--accent); font-size: 12px; padding: 0 2px; white-space: nowrap; }
+.copy { border: 0; background: none; color: var(--accent); font-size: 12px; padding: 0 2px; white-space: nowrap; text-decoration: none; }
+.vars li.chosen { outline: 2px solid var(--accent); }
+.vars li.chosen a.copy { font-weight: 600; }
 .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .st { border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; font-size: 13px; color: var(--ink); text-decoration: none; }
 .st[aria-current="true"][data-v="take"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
@@ -242,12 +244,18 @@ function renderIdeas() {
     if (i.how) { const h = el("p", "how"); h.append(el("b", null, "Как у нас: "), document.createTextNode(i.how)); b.append(h); }
     if (i.variants && i.variants.length) {
       const v = el("div", "vars"); v.append(el("b", null, "Свои фразы")); const ul = el("ul");
-      for (const t of i.variants) { const li = el("li"); const s = el("span", null, t); const cb = el("button", "copy", "Копировать"); cb.onclick = () => copyText(cb, t); li.append(s, cb); ul.append(li); }
+      i.variants.forEach((t, k) => {
+        const li = el("li" + ""); if (i.pick === k + 1) li.className = "chosen";
+        const s = el("span", null, t); const cb = el("button", "copy", "Копировать"); cb.onclick = () => copyText(cb, t);
+        const pk = el("a", "copy", i.pick === k + 1 ? "✓ выбрано" : "Выбрать"); pk.href = BOT + "pick_" + i.id + "_" + (k + 1); pk.target = "_blank"; pk.rel = "noopener";
+        li.append(s, cb, pk); ul.append(li);
+      });
       v.append(ul); b.append(v);
     }
     if (i.note) b.append(el("p", "mynote", i.note));
     const row = el("div", "row");
     for (const [k, l] of ACTS) row.append(act(k + "_" + i.id, l, k, st === k));
+    row.append(act("edit_" + i.id, "✏️ Править", "edit", false));
     if (i.url) { const a = el("a", "src", "Оригинал ↗"); a.href = i.url; a.target = "_blank"; a.rel = "noopener"; row.append(a); }
     b.append(row); c.append(b); feed.append(c);
   }
