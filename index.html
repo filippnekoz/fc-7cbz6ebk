@@ -248,6 +248,7 @@ function renderIdeas() {
     if (i.effort) m.append(el("span", "effort", i.effort));
     b.append(m, el("p", "what", i.title));
     if (i.how) { const h = el("p", "how"); h.append(el("b", null, "Как у нас: "), document.createTextNode(i.how)); b.append(h); }
+    if (i.start) { const s = el("p", "how"); s.append(el("b", null, "Старт: "), document.createTextNode(i.start)); b.append(s); }
     if (i.variants && i.variants.length) {
       const v = el("div", "vars"); v.append(el("b", null, "Свои фразы")); const ul = el("ul");
       i.variants.forEach((t, k) => {
