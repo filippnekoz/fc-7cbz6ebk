@@ -105,6 +105,7 @@ header, .feed, .plan { grid-template-columns: minmax(0, 1fr); }
     <nav class="tabs" role="tablist">
       <button class="tab" role="tab" data-view="memes" id="tab-memes">Мемы</button>
       <button class="tab" role="tab" data-view="art" id="tab-art">Арт</button>
+      <button class="tab" role="tab" data-view="talks" id="tab-talks">Разговорные</button>
       <button class="tab" role="tab" data-view="carousels" id="tab-carousels">Карусели</button>
       <button class="tab" role="tab" data-view="tips" id="tab-tips">Советы</button>
       <button class="tab" role="tab" data-view="plan" id="tab-plan">План</button>
@@ -168,10 +169,10 @@ header, .feed, .plan { grid-template-columns: minmax(0, 1fr); }
 
 <script>
 const BOT = "https://t.me/fil_content_bot?start=";
-const VIEWS = { memes: ["meme"], art: ["art", "project"], carousels: ["carousel"], tips: ["tip"] };
-const EMPTY = { memes: "Мемов пока нет. Поделись роликом с @fil_content_bot.", art: "Арт-идей пока нет.", tips: "Советов пока нет.",
+const VIEWS = { memes: ["meme"], art: ["art", "project"], talks: ["talk"], carousels: ["carousel"], tips: ["tip"] };
+const EMPTY = { memes: "Мемов пока нет. Поделись роликом с @fil_content_bot.", art: "Арт-идей пока нет.", tips: "Советов пока нет.", talks: "Разговорных пока нет.",
   carousels: "Здесь будут карусели. Сначала тема: напиши боту «карусель про …», и я соберу слайды в твоём стиле." };
-const KIND = { meme: "Мем", art: "Арт", tip: "Совет", project: "Уже проект" };
+const KIND = { meme: "Мем", art: "Арт", tip: "Совет", project: "Уже проект", talk: "Разговорный", carousel: "Карусель" };
 const STATUS = [["new", "Новые"], ["take", "Берём"], ["shot", "Снято"], ["posted", "Вышло"], ["no", "Нет"]];
 const SLABEL = Object.fromEntries(STATUS);
 const ACTS = [["take", "Берём"], ["no", "Нет"], ["shot", "Снято"], ["posted", "Вышло"]];
